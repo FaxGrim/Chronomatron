@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chronomatron Seed Solver</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0c1122; color: #f1f5ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: clamp(24px, 6vw, 72px) 24px; }
+    h1 { font-size: clamp(28px, 7vw, 52px); margin: 0 0 8px; letter-spacing: -.05em; }
+    p { color: #b4c2df; margin: 0; line-height: 1.55; }
+    .controls { display: flex; flex-wrap: wrap; gap: 18px; margin: 28px 0 24px; }
+    label { display: grid; gap: 8px; font-weight: 650; min-width: min(100%, 225px); }
+    select { font: inherit; border: 1px solid #526184; background: #182341; color: #f1f5ff; padding: 10px 14px; border-radius: 8px; }
+    :focus-visible { outline: 2px solid #55eedd; outline-offset: 3px; }
+    output { display: block; margin: 14px 0 22px; color: #55eedd; font-variant-numeric: tabular-nums; }
+    ol { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; gap: 10px; }
+    li { background: #17213b; border-radius: 8px; overflow: hidden; padding: 0 0 12px; text-align: center; }
+    .swatch { display: block; height: 48px; border-bottom: 1px solid #0e1326; }
+    .position, small { display: block; color: #b4c2df; font-size: .82rem; }
+    .position { margin: 9px 0 4px; }
+    strong { display: block; margin-bottom: 4px; }
+    @media (max-width: 750px) { ol { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 380px) { main { padding-inline: 14px; } ol { gap: 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Chronomatron Seed Solver</h1>
+    <p>Choose the seed and level shown on the FPGA. Follow the sequence from left to right.</p>
+    <div class="controls">
+      <label for="seed">Seed<select id="seed"></select></label>
+      <label for="level">Level<select id="level"></select></label>
+    </div>
+    <output id="settings" for="seed level" aria-live="polite"></output>
+    <ol id="sequence" aria-label="Correct input sequence"></ol>
+    <noscript>Enable JavaScript to display the sequences.</noscript>
+  </main>
+
+  <script id="patterns" type="application/json">__PATTERNS_JSON__</script>
+  <script>
+    "use strict";
+    const patterns = JSON.parse(document.getElementById("patterns").textContent);
+    const colors = [
+      ["Red", "#ff4433"], ["Blue", "#4477ff"], ["Yellow", "#ffee33"], ["Green", "#33dd55"],
+      ["Purple", "#aa55ee"], ["Orange", "#ff8833"], ["Cyan", "#33ddcc"], ["Pink", "#ff88cc"]
+    ];
+    const levels = ["Beginner", "Intermediate", "High", "Grand", "Supreme",
+                    "Transcendent", "Metaphysic", "Ultrasequencer"];
+    const colorTimesMs = [1500, 1400, 1300, 1200, 1100, 1000, 800, 600];
+    const seedSelect = document.getElementById("seed");
+    const levelSelect = document.getElementById("level");
+    const sequence = document.getElementById("sequence");
+    const settings = document.getElementById("settings");
+
+    for (let i = 0; i < 8; i++) {
+      seedSelect.add(new Option(String(i), String(i)));
+      levelSelect.add(new Option((i + 1) + " · " + levels[i], String(i)));
+    }
+
+    function render() {
+      const seed = Number(seedSelect.value);
+      const level = Number(levelSelect.value);
+      const bits = seed.toString(2).padStart(3, "0");
+      const seconds = (colorTimesMs[level] / 1000).toFixed(1);
+      settings.textContent = "SW10–SW8 = " + bits + " · Color time " + seconds + " s";
+      sequence.replaceChildren(...patterns[seed][level].map((color, index) => {
+        const item = document.createElement("li");
+        const swatch = document.createElement("span");
+        swatch.className = "swatch";
+        swatch.style.backgroundColor = colors[color][1];
+        const position = document.createElement("span");
+        position.className = "position";
+        position.textContent = "Step " + (index + 1);
+        const name = document.createElement("strong");
+        name.textContent = colors[color][0];
+        const controls = document.createElement("small");
+        controls.textContent = "SW" + color + " / Key " + (color + 1);
+        item.append(swatch, position, name, controls);
+        return item;
+      }));
+    }
+
+    seedSelect.addEventListener("change", render);
+    levelSelect.addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
